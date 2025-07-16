@@ -1,5 +1,5 @@
 $(document).ready(function() {
-    const chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
+    const chart = window.LightweightCharts.createChart(document.getElementById('chart-container'), {
         width: 800,
         height: 500,
         layout: {
@@ -15,7 +15,7 @@ $(document).ready(function() {
             },
         },
         crosshair: {
-            mode: LightweightCharts.CrosshairMode.Normal,
+            mode: window.LightweightCharts.CrosshairMode.Normal,
         },
         rightPriceScale: {
             borderColor: 'rgba(197, 203, 206, 0.8)',
