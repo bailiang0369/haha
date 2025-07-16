@@ -1,0 +1,8 @@
+body {
+    font-family: sans-serif;
+}
+
+#chart-container {
+    width: 800px;
+    height: 500px;
+}
