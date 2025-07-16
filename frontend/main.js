@@ -36,14 +36,6 @@ $(document).ready(function() {
         wickUpColor: 'rgba(255, 144, 0, 1)',
     });
 
-    // Set a fixed height for the main pane
-    chart.priceScale('right').applyOptions({
-        scaleMargins: {
-            top: 0.1,
-            bottom: 0.4, // leave space for two indicator panes
-        },
-    });
-
     // Fetch and display K-lines
     fetch('http://localhost:8000/api/klines')
         .then(response => response.json())
@@ -52,34 +44,26 @@ $(document).ready(function() {
         })
         .catch(error => console.error('Error fetching klines:', error));
 
-    // Create a new pane for MACD
-    const macdPriceScale = chart.addPriceScale('macd', {
-        scaleMargins: {
-            top: 0.6, // position of the pane
-            bottom: 0.2,
-        },
-    });
-
-    // Fetch and display MACD
+    // Fetch and display MACD in a new pane
     fetch('http://localhost:8000/api/macd')
         .then(response => response.json())
         .then(data => {
             const macdLine = chart.addLineSeries({
                 color: '#2962FF',
                 lineWidth: 2,
-                priceScaleId: 'macd',
+                pane: 1, // Pane 1
             });
             const signalLine = chart.addLineSeries({
                 color: '#FF6D00',
                 lineWidth: 2,
-                priceScaleId: 'macd',
+                pane: 1, // Pane 1
             });
             const histogramSeries = chart.addHistogramSeries({
                 color: '#26a69a',
                 priceFormat: {
                     type: 'volume',
                 },
-                priceScaleId: 'macd',
+                pane: 1, // Pane 1
             });
 
             const macdData = data.map(d => ({ time: d.time, value: d.macd }));
@@ -96,32 +80,24 @@ $(document).ready(function() {
         })
         .catch(error => console.error('Error fetching MACD:', error));
 
-    // Create a new pane for KDJ
-    const kdjPriceScale = chart.addPriceScale('kdj', {
-        scaleMargins: {
-            top: 0.8, // position of the pane
-            bottom: 0,
-        },
-    });
-
-    // Fetch and display KDJ
+    // Fetch and display KDJ in another new pane
     fetch('http://localhost:8000/api/kdj')
         .then(response => response.json())
         .then(data => {
             const kLine = chart.addLineSeries({
                 color: '#FFC107',
                 lineWidth: 2,
-                priceScaleId: 'kdj',
+                pane: 2, // Pane 2
             });
             const dLine = chart.addLineSeries({
                 color: '#2196F3',
                 lineWidth: 2,
-                priceScaleId: 'kdj',
+                pane: 2, // Pane 2
             });
             const jLine = chart.addLineSeries({
                 color: '#F44336',
                 lineWidth: 2,
-                priceScaleId: 'kdj',
+                pane: 2, // Pane 2
             });
 
             const kData = data.map(d => ({ time: d.time, value: d.k }));
@@ -129,7 +105,7 @@ $(document).ready(function() {
             const jData = data.map(d => ({ time: d.time, value: d.j }));
 
             kLine.setData(kData);
-dLine.setData(dData);
+            dLine.setData(dData);
             jLine.setData(jData);
         })
         .catch(error => console.error('Error fetching KDJ:', error));
