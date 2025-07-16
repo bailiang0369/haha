@@ -1,7 +1,7 @@
 $(document).ready(function() {
     const chartOptions = {
         width: 800,
-        height: 500,
+        height: 600, // Increased height to accommodate panes
         layout: {
             backgroundColor: '#ffffff',
             textColor: 'rgba(33, 56, 77, 1)',
@@ -36,6 +36,14 @@ $(document).ready(function() {
         wickUpColor: 'rgba(255, 144, 0, 1)',
     });
 
+    // Set a fixed height for the main pane
+    chart.priceScale('right').applyOptions({
+        scaleMargins: {
+            top: 0.1,
+            bottom: 0.4, // leave space for two indicator panes
+        },
+    });
+
     // Fetch and display K-lines
     fetch('http://localhost:8000/api/klines')
         .then(response => response.json())
@@ -43,6 +51,14 @@ $(document).ready(function() {
             candleSeries.setData(data);
         })
         .catch(error => console.error('Error fetching klines:', error));
+
+    // Create a new pane for MACD
+    const macdPriceScale = chart.addPriceScale('macd', {
+        scaleMargins: {
+            top: 0.6, // position of the pane
+            bottom: 0.2,
+        },
+    });
 
     // Fetch and display MACD
     fetch('http://localhost:8000/api/macd')
@@ -74,18 +90,19 @@ $(document).ready(function() {
                 color: d.histogram >= 0 ? 'rgba(0, 150, 136, 0.8)' : 'rgba(255, 82, 82, 0.8)',
             }));
 
-            chart.priceScale('macd').applyOptions({
-                scaleMargins: {
-                    top: 0.8,
-                    bottom: 0,
-                },
-            });
-
             macdLine.setData(macdData);
             signalLine.setData(signalData);
             histogramSeries.setData(histogramData);
         })
         .catch(error => console.error('Error fetching MACD:', error));
+
+    // Create a new pane for KDJ
+    const kdjPriceScale = chart.addPriceScale('kdj', {
+        scaleMargins: {
+            top: 0.8, // position of the pane
+            bottom: 0,
+        },
+    });
 
     // Fetch and display KDJ
     fetch('http://localhost:8000/api/kdj')
@@ -111,15 +128,8 @@ $(document).ready(function() {
             const dData = data.map(d => ({ time: d.time, value: d.d }));
             const jData = data.map(d => ({ time: d.time, value: d.j }));
 
-            chart.priceScale('kdj').applyOptions({
-                scaleMargins: {
-                    top: 0.9,
-                    bottom: 0.1,
-                },
-            });
-
             kLine.setData(kData);
-            dLine.setData(dData);
+dLine.setData(dData);
             jLine.setData(jData);
         })
         .catch(error => console.error('Error fetching KDJ:', error));
