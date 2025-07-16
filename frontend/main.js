@@ -86,4 +86,41 @@ $(document).ready(function() {
             histogramSeries.setData(histogramData);
         })
         .catch(error => console.error('Error fetching MACD:', error));
+
+    // Fetch and display KDJ
+    fetch('http://localhost:8000/api/kdj')
+        .then(response => response.json())
+        .then(data => {
+            const kLine = chart.addLineSeries({
+                color: '#FFC107',
+                lineWidth: 2,
+                priceScaleId: 'kdj',
+            });
+            const dLine = chart.addLineSeries({
+                color: '#2196F3',
+                lineWidth: 2,
+                priceScaleId: 'kdj',
+            });
+            const jLine = chart.addLineSeries({
+                color: '#F44336',
+                lineWidth: 2,
+                priceScaleId: 'kdj',
+            });
+
+            const kData = data.map(d => ({ time: d.time, value: d.k }));
+            const dData = data.map(d => ({ time: d.time, value: d.d }));
+            const jData = data.map(d => ({ time: d.time, value: d.j }));
+
+            chart.priceScale('kdj').applyOptions({
+                scaleMargins: {
+                    top: 0.9,
+                    bottom: 0.1,
+                },
+            });
+
+            kLine.setData(kData);
+            dLine.setData(dData);
+            jLine.setData(jData);
+        })
+        .catch(error => console.error('Error fetching KDJ:', error));
 });

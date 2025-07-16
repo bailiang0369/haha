@@ -21,7 +21,6 @@ def get_klines_data():
         [1622512800000, '49150', '49300', '49100', '49250', '1300', 1622516399999, '64000000', 130, '650', '31850000', '0'],
         [1622516400000, '49250', '49400', '49200', '49350', '1400', 1622519999999, '69000000', 140, '700', '34300000', '0'],
         [1622520000000, '49350', '49500', '49300', '49450', '1500', 1622523599999, '74000000', 150, '750', '36750000', '0'],
-        # Add more data for MACD calculation
         [1622523600000, '49450', '49600', '49400', '49550', '1600', 1622527199999, '79000000', 160, '800', '39200000', '0'],
         [1622527200000, '49550', '49700', '49500', '49650', '1700', 1622530799999, '84000000', 170, '850', '41650000', '0'],
         [1622530800000, '49650', '49800', '49600', '49750', '1800', 1622534399999, '89000000', 180, '900', '44100000', '0'],
@@ -67,3 +66,24 @@ def get_macd(symbol: str = 'BTCUSDT', interval: str = '1h', fastperiod=12, slowp
     }).dropna()
 
     return json.loads(macd_data.to_json(orient='records'))
+
+@app.get("/api/kdj")
+def get_kdj(symbol: str = 'BTCUSDT', interval: str = '1h', n=9, m1=3, m2=3):
+    df = get_klines_data()
+
+    low_list = df['low'].rolling(n, min_periods=1).min()
+    high_list = df['high'].rolling(n, min_periods=1).max()
+    rsv = (df['close'] - low_list) / (high_list - low_list) * 100
+
+    k = rsv.ewm(com=m1-1, adjust=False).mean()
+    d = k.ewm(com=m2-1, adjust=False).mean()
+    j = 3 * k - 2 * d
+
+    kdj_data = pd.DataFrame({
+        'time': df['time'],
+        'k': k,
+        'd': d,
+        'j': j
+    }).dropna()
+
+    return json.loads(kdj_data.to_json(orient='records'))
