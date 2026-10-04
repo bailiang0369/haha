@@ -1,0 +1,16 @@
+# Secrets & runtime state
+.cryptohft_key
+.watch_state.json
+.watch_download.log
+.download.pid
+
+# Downloaded data (persists across sandbox resets only in untracked, but too large for git)
+data/
+
+# Python
+__pycache__/
+*.pyc
+
+# Temp
+/tmp/
+*.tmp
