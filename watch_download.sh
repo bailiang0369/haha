@@ -92,7 +92,9 @@ if is_downloader_running; then
 else
     echo "[lock] no download_orderbook.py running -> launching."
     API_KEY=$(cat "$API_KEY_FILE")
-    nohup python3 "$WORKDIR/download_orderbook.py" \
+    # Use setsid (not nohup) to create an independent session, so TRAE
+    # sandbox supervisor won't reap it when the parent shell exits.
+    (setsid python3 "$WORKDIR/download_orderbook.py" \
         --start "$START" \
         --end "$END" \
         --assets "$ASSETS" \
@@ -100,8 +102,8 @@ else
         --exchanges "$EXCHANGES" \
         --output "$OUTPUT" \
         --api-key "$API_KEY" \
-        >> "$LOGDIR/download_orderbook.log" 2>&1 &
-    DL_PID=$!
+        >> "$LOGDIR/download_orderbook.log" 2>&1 < /dev/null &)
+    DL_PID=$(pgrep -f "python.*download_orderbook\.py" | head -1)
     echo "$DL_PID" > "$PIDFILE"
     echo "[launch] pid=$DL_PID  log=$LOGDIR/download_orderbook.log"
     sleep 3
