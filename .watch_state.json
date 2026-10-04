@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-10-04T04:09:41Z",
+  "status": "running",
+  "note": "downloader alive (PID 4950)",
+  "miss_streak": 0,
+  "pid": 4950,
+  "spot_files": 70,
+  "futures_files": 0,
+  "total_files": 70,
+  "expected_files": 1488,
+  "progress_pct": 4.7,
+  "size_bytes": 285291351,
+  "size": "272.1M",
+  "disk_avail_bytes": 1237025648640,
+  "disk_avail": "1.1T",
+  "disk_used_bytes": 266607403008,
+  "disk_used_pct": 16.8,
+  "start_date": "2026-09-04",
+  "end_date": "2026-10-04",
+  "assets": "BTC",
+  "exchanges": "binance",
+  "market": "both"
+}
