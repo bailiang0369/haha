@@ -46,8 +46,8 @@ collect_state() {
 
     local spot=0 futures=0 total=0 bytes=0
     if [ -d "$DATA_DIR" ]; then
-        spot=$(find "$DATA_DIR" -path '*/binance_spot/*orderbook*parquet' -type f 2>/dev/null | wc -l)
-        futures=$(find "$DATA_DIR" -path '*/binance_futures/*orderbook*parquet' -type f 2>/dev/null | wc -l)
+        spot=$(find "$DATA_DIR" -path '*/exchange=binance_spot/*/*.parquet' -type f 2>/dev/null | wc -l)
+        futures=$(find "$DATA_DIR" -path '*/exchange=binance_futures/*/*.parquet' -type f 2>/dev/null | wc -l)
         total=$(( spot + futures ))
         bytes=$(du -sb "$DATA_DIR" 2>/dev/null | awk '{print $1+0}')
     fi
