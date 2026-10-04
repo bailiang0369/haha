@@ -1,1 +1,1 @@
-{"timestamp":"2026-10-04T05:35:55+00:00","status":"running","total":8,"spot":8,"futures":0,"expected":2880,"progress":0,"size":"44M","disk_avail":"882G"}
+{"timestamp":"2026-10-04T11:38:39+00:00","status":"restarting","total":11,"spot":11,"futures":0,"expected":2880,"progress":0,"size":"61M","disk_avail":"1.2T"}
