@@ -39,6 +39,8 @@ import time
 import random
 from datetime import datetime, timedelta
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 
 import requests
 
@@ -143,8 +145,9 @@ def batch_download(
     output_root: Path,
     api_key: str | None,
     data_types: list[str],
+    workers: int = 16,
 ):
-    """主下载逻辑"""
+    """主下载逻辑 — 多线程并发"""
     # 生成任务列表
     tasks = []
     for exchange in exchanges:
@@ -158,59 +161,65 @@ def batch_download(
                         fp = file_path(exchange_id, symbol, date, hour, dtype)
                         tasks.append((exchange, market, asset, symbol, exchange_id, date, hour, dtype, fp, lp))
 
-    print(f"\n共 {len(tasks)} 个文件待下载")
-    print(f"时间范围: {start_date} → {end_date} ({(datetime.strptime(end_date, '%Y-%m-%d') - datetime.strptime(start_date, '%Y-%m-%d')).days} 天)")
-    print(f"交易所: {exchanges}")
-    print(f"资产: {assets}")
-    print(f"市场: {markets}")
-    print(f"数据类型: {data_types}")
-    print(f"输出目录: {output_root.resolve()}")
-    if api_key:
-        print("API Key: 已提供")
-    else:
-        print("API Key: 未提供 (匿名 60 req/min)")
-    print()
-
-    # 执行下载
-    success, skipped, failed = 0, 0, 0
-    failed_list = []
-    request_count = 0
-    rate_window_start = time.time()
-
-    for i, (exchange, market, asset, symbol, exchange_id, date, hour, dtype, fp, lp) in enumerate(tasks, 1):
-        # 断点续传
+    # 断点续传: 过滤已存在
+    to_download = []
+    skipped = 0
+    for t in tasks:
+        lp = t[9]
         if lp.exists() and lp.stat().st_size > 1024:
             skipped += 1
-            continue
-
-        url = f"{API_BASE}/download?file={fp}"
-        tag = f"[{i}/{len(tasks)}] {exchange:12s} {market:7s} {asset:4s} {dtype:10s} {date} {hour:02d}h"
-
-        # 速率控制
-        if not api_key:
-            request_count += 1
-            elapsed = time.time() - rate_window_start
-            if elapsed < 60 and request_count >= ANON_RATE_LIMIT:
-                wait = 60 - elapsed + random.uniform(1, 5)
-                print(f"  [速率控制] 已达 {ANON_RATE_LIMIT} req/min, 等待 {wait:.0f}s...")
-                time.sleep(wait)
-                request_count = 0
-                rate_window_start = time.time()
-
-        ok, msg = download_file(url, lp, api_key)
-        if ok:
-            success += 1
-            print(f"{tag} ✅ {msg}")
         else:
-            failed += 1
-            failed_list.append((fp, msg))
-            print(f"{tag} ❌ {msg}")
+            to_download.append(t)
 
-        # 轻微的间隔, 避免瞬时请求
-        time.sleep(random.uniform(0.2, 0.5))
+    print(f"\n📋 总任务: {len(tasks)}  |  跳过(已存在): {skipped}  |  待下载: {len(to_download)}")
+    print(f"📅 时间范围: {start_date} → {end_date} ({(datetime.strptime(end_date, '%Y-%m-%d') - datetime.strptime(start_date, '%Y-%m-%d')).days} 天)")
+    print(f"🔀 并发: {workers} workers")
+    print(f"📦 输出: {output_root.resolve()}")
+    print(f"🔑 API Key: {'已提供' if api_key else '未提供 (匿名 60 req/min)'}")
+    print()
 
+    if not to_download:
+        print("✅ 所有文件已下载, 无需联网")
+        return
+
+    # 多线程下载
+    lock = threading.Lock()
+    success = 0
+    failed = 0
+    failed_list = []
+    t0 = time.time()
+    done = 0
+    total = len(to_download)
+
+    def _worker(t):
+        nonlocal success, failed, done
+        exchange, market, asset, symbol, exchange_id, date, hour, dtype, fp, lp = t
+        url = f"{API_BASE}/download?file={fp}"
+        ok, msg = download_file(url, lp, api_key)
+        with lock:
+            done += 1
+            if ok:
+                success += 1
+            else:
+                failed += 1
+                failed_list.append((fp, msg))
+            elapsed = time.time() - t0
+            rate = done / elapsed if elapsed > 0 else 0
+            eta = (total - done) / rate if rate > 0 else 0
+            pct = done / total * 100
+            status = "✅" if ok else "❌"
+            print(f"\r  [{done}/{total}] {pct:5.1f}%  {rate:6.1f} files/min  ETA {eta/60:.1f}min  {status} {date} {hour:02d}h {msg:<20s}", end="", flush=True)
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = [pool.submit(_worker, t) for t in to_download]
+        for f in as_completed(futures):
+            f.result()  # 抛异常则终止
+
+    print()  # 换行
+    total_elapsed = time.time() - t0
     print(f"\n{'='*50}")
-    print(f"完成! 成功: {success}, 跳过(已存在): {skipped}, 失败: {failed}")
+    print(f"✅ 完成! 成功: {success}  跳过: {skipped}  失败: {failed}")
+    print(f"⏱️ 总耗时: {total_elapsed:.1f}s  ({total_elapsed/60:.1f}min)  速率: {success/total_elapsed*60:.1f} files/min")
 
     if failed_list:
         log = output_root / "failed_downloads.txt"
@@ -249,6 +258,8 @@ def parse_args():
     p.add_argument("--data-types", nargs="+", default=["orderbook"],
                    choices=["orderbook", "trades", "ticker", "open_interest", "funding", "liquidations"],
                    help="数据类型 (默认: orderbook)")
+    p.add_argument("--workers", type=int, default=16,
+                   help="并发线程数 (默认: 16)")
     return p.parse_args()
 
 
@@ -295,4 +306,5 @@ if __name__ == "__main__":
         output_root=Path(args.output),
         api_key=args.api_key,
         data_types=args.data_types,
+        workers=args.workers,
     )
