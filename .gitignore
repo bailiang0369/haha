@@ -1,0 +1,9 @@
+# Runtime / sandbox artifacts (lost on reset anyway; never commit API keys or data).
+.cryptohft_key
+.watch_state.json
+.watchdog.pid
+.download.pid
+download_orderbook.py.cache
+data/
+__pycache__/
+*.pyc
