@@ -62,22 +62,24 @@ already_running() {
 }
 
 start_downloader() {
-  local api_key
+  local api_key pid
   api_key=$(cat "$API_KEY_FILE")
   log "START download_orderbook.py (start=$START_DATE end=$END_DATE assets=$ASSETS market=$MARKET)"
-  nohup python3 "$DL_SCRIPT" \
+  setsid python3 "$DL_SCRIPT" \
     --start "$START_DATE" --end "$END_DATE" \
     --assets "$ASSETS" --market "$MARKET" --exchanges "$EXCHANGES" \
     --output "$OUTPUT" --api-key "$api_key" \
-    >> /workspace/download_orderbook.log 2>&1 &
-  echo $! > "$PIDFILE"
-  sleep 2
-  if ! kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
-    log "ERROR downloader died immediately"
+    </dev/null >>/workspace/download_orderbook.log 2>&1 &
+  pid=$!
+  disown "$pid" 2>/dev/null || true
+  echo "$pid" > "$PIDFILE"
+  sleep 3
+  if ! kill -0 "$pid" 2>/dev/null; then
+    log "ERROR downloader died immediately (setsid)"
     rm -f "$PIDFILE"
     return 1
   fi
-  log "downloader PID=$(cat "$PIDFILE")"
+  log "downloader PID=$pid (setsid+disown)"
 }
 
 # ---- main ----
