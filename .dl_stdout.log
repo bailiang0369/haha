@@ -17,3 +17,37 @@
   OK spo binance_spot/2026-09-04/22/BTCUSDT_orderbook.parquet
   OK spo binance_spot/2026-09-04/23/BTCUSDT_orderbook.parquet
   OK spo binance_spot/2026-09-04/20/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-05/03/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-05/02/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-05/05/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-05/00/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-05/04/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-05/01/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-05/07/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-05/09/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-05/06/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-05/08/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-05/10/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-05/12/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-05/11/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-05/13/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-05/14/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-05/16/BTCUSDT_orderbook.parquet
+[40/1488] spot=40 fut=0 fail=0 2.7% 189MB rate=0.15/s eta=9739s
+  OK spo binance_spot/2026-09-05/18/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-05/17/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-05/19/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-05/15/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-05/21/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-05/22/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-05/23/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-05/20/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-06/00/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-06/03/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-06/05/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-06/01/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-06/02/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-06/04/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-06/07/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-06/06/BTCUSDT_orderbook.parquet
+  OK spo binance_spot/2026-09-06/09/BTCUSDT_orderbook.parquet

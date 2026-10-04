@@ -1,19 +1,19 @@
 {
-  "total": 24,
-  "spot": 24,
+  "total": 57,
+  "spot": 57,
   "futures": 0,
   "expected": 1488,
-  "progress": "1.6%",
-  "size_mb": 141.3,
+  "progress": "3.8%",
+  "size_mb": 243.2,
   "status": "running",
   "failed": 0,
-  "disk_avail_mb": 1243742.0,
+  "disk_avail_mb": 1243720.0,
   "start": "2026-09-04",
   "end": "2026-10-04",
   "assets": "BTC",
   "market": "both",
   "exchanges": "binance",
   "workers": 4,
-  "updated_at": "2026-10-04T14:38:47.495370Z",
-  "elapsed_s": 190.6
+  "updated_at": "2026-10-04T14:41:19.763984Z",
+  "elapsed_s": 342.8
 }
