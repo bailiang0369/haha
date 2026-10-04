@@ -1,0 +1,19 @@
+{
+  "ts": "2026-10-04T08:07:06.356397Z",
+  "total": 2880,
+  "spot": 1440,
+  "futures": 1440,
+  "expected": 2880,
+  "progress": 100.0,
+  "size": "23M",
+  "size_bytes": 18689082,
+  "status": "done",
+  "disk_avail": "1.1T",
+  "disk_kb": 1155817272,
+  "dl_procs": 0,
+  "start": "2026-09-04",
+  "end": "2026-10-04",
+  "assets": "BTC",
+  "market": "both",
+  "exchanges": "binance"
+}

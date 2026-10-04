@@ -1,0 +1,11 @@
+[downloader] expected=2880 scanned_done=96 no_api=True batch=48
+[downloader] slot_range=2026-09-04 ~ 2026-10-04  market=both
+[progress] 100/2880 (3.47%)  last=2026-09-06T01:00:00
+[batch] reached limit 48, exit. Resume on next watchdog tick.
+[downloader] expected=2880 scanned_done=192 no_api=True batch=192
+[downloader] slot_range=2026-09-04 ~ 2026-10-04  market=both
+[progress] 200/2880 (6.94%)  last=2026-09-08T03:00:00
+[progress] 300/2880 (10.42%)  last=2026-09-10T05:00:00
+[progress] 400/2880 (13.89%)  last=2026-09-12T07:00:00
+[progress] 500/2880 (17.36%)  last=2026-09-14T09:00:00
+[batch] reached limit 192, exit. Resume on next watchdog tick.

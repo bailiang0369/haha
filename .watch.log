@@ -1,0 +1,38 @@
+===== 2026-10-04T08:04:30+00:00 watch_download.sh run =====
+[watch] download_orderbook.py instances = 0
+[watch] disk avail = 1.1T (1155599028 KB)
+<stdin>:3: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+{'ts': '2026-10-04T08:04:31.233139Z', 'total': 0, 'spot': 0, 'futures': 0, 'expected': 2976, 'progress': 0.0, 'size': '4.0K', 'size_bytes': 0, 'status': 'idle', 'disk_avail': '1.1T', 'disk_kb': 1155599028, 'dl_procs': 0, 'start': '2026-09-04', 'end': '2026-10-04', 'assets': 'BTC', 'market': 'both', 'exchanges': 'binance'}
+[watch] wrote /workspace/.watch_state.json  status=idle  progress=0.00%  total=0/2976
+[watch] no download process & not done, starting...
+[watch] started pid=2840
+[watch] pid=2840 alive, good.
+===== 2026-10-04T08:05:50+00:00 watch_download.sh run =====
+[watch] download_orderbook.py instances = 1
+[watch] disk avail = 1.1T (1155596084 KB)
+<stdin>:3: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+{'ts': '2026-10-04T08:05:50.757998Z', 'total': 0, 'spot': 0, 'futures': 0, 'expected': 2880, 'progress': 0.0, 'size': '4.0K', 'size_bytes': 0, 'status': 'running', 'disk_avail': '1.1T', 'disk_kb': 1155596084, 'dl_procs': 1, 'start': '2026-09-04', 'end': '2026-10-04', 'assets': 'BTC', 'market': 'both', 'exchanges': 'binance'}
+[watch] wrote /workspace/.watch_state.json  status=running  progress=0.00%  total=0/2880
+===== 2026-10-04T08:06:14+00:00 watch_download.sh run =====
+[watch] download_orderbook.py instances = 0
+[watch] disk avail = 1.1T (1155840124 KB)
+<stdin>:3: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+{'ts': '2026-10-04T08:06:15.948469Z', 'total': 96, 'spot': 96, 'futures': 0, 'expected': 2880, 'progress': 3.33, 'size': '796K', 'size_bytes': 623077, 'status': 'idle', 'disk_avail': '1.1T', 'disk_kb': 1155840124, 'dl_procs': 0, 'start': '2026-09-04', 'end': '2026-10-04', 'assets': 'BTC', 'market': 'both', 'exchanges': 'binance'}
+[watch] wrote /workspace/.watch_state.json  status=idle  progress=3.33%  total=96/2880
+[watch] no download process & not done, starting (batch=48)...
+[watch] started pid=3502
+[watch] pid=3502 died immediately, check /workspace/.download.log
+===== 2026-10-04T08:06:35+00:00 watch_download.sh run =====
+[watch] download_orderbook.py instances = 0
+[watch] disk avail = 1.1T (1155839192 KB)
+<stdin>:3: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+{'ts': '2026-10-04T08:06:36.701857Z', 'total': 192, 'spot': 192, 'futures': 0, 'expected': 2880, 'progress': 6.67, 'size': '1.6M', 'size_bytes': 1246080, 'status': 'idle', 'disk_avail': '1.1T', 'disk_kb': 1155839192, 'dl_procs': 0, 'start': '2026-09-04', 'end': '2026-10-04', 'assets': 'BTC', 'market': 'both', 'exchanges': 'binance'}
+[watch] wrote /workspace/.watch_state.json  status=idle  progress=6.67%  total=192/2880
+[watch] no download process & not done, run batch-size=192 in foreground...
+[watch] batch exit=0
+===== 2026-10-04T08:07:05+00:00 watch_download.sh run =====
+[watch] download_orderbook.py instances = 0
+[watch] disk avail = 1.1T (1155817272 KB)
+<stdin>:3: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+{'ts': '2026-10-04T08:07:06.356397Z', 'total': 2880, 'spot': 1440, 'futures': 1440, 'expected': 2880, 'progress': 100.0, 'size': '23M', 'size_bytes': 18689082, 'status': 'done', 'disk_avail': '1.1T', 'disk_kb': 1155817272, 'dl_procs': 0, 'start': '2026-09-04', 'end': '2026-10-04', 'assets': 'BTC', 'market': 'both', 'exchanges': 'binance'}
+[watch] wrote /workspace/.watch_state.json  status=done  progress=100.00%  total=2880/2880
