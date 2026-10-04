@@ -40,7 +40,7 @@ def run_bulk(exchange: str, symbols: list, start: str, end: str,
              dest: str, api_key: str, workers: int) -> int:
     """Invoke `cryptohftdata bulk` for one exchange/market."""
     cmd = [
-        sys.executable, "-m", "cryptohftdata", "bulk",
+        "cryptohftdata", "bulk",
         "--exchange", exchange,
         "--data-type", "orderbook",
         "--start", start,
