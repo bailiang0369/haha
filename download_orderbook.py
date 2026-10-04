@@ -297,9 +297,9 @@ def main():
                     print(f"[skip-fail] {errors[-1]}", flush=True)
                     # still touch an empty file so we don't hammer the API
                     target.write_bytes(b"")
-                    continue
 
-            # Flush state every 5s or every chunk, whichever comes first
+            # Flush state every 5s or every chunk, whichever comes first.
+            # IMPORTANT: must run for every branch (skip, done, fail).
             now = time.time()
             if now - last_state_flush >= 5.0 or idx == total:
                 update_state(build_state(
