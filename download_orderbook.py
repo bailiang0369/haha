@@ -84,7 +84,7 @@ def count_expected_files(start: str, end: str, exchanges, symbols):
 def run_bulk(exchange: str, symbols, start, end, dest, api_key):
     """调用 cryptohftdata bulk 下载一个 exchange 的 orderbook 数据."""
     cmd = [
-        sys.executable, "-m", "cryptohftdata", "bulk",
+        "cryptohftdata", "bulk",
         "--exchange", exchange,
         "--data-type", "orderbook",
         "--start", start,
