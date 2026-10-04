@@ -1,0 +1,5 @@
+data/
+.cryptohft_key
+.watch_state.json
+download.log
+.download.pid
