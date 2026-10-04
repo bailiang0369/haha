@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-10-04T04:22:51Z",
+  "status": "running",
+  "note": "alive PID=2821",
+  "miss_streak": 0,
+  "pid": 2821,
+  "spot_files": 23,
+  "futures_files": 0,
+  "total_files": 23,
+  "expected_files": 1488,
+  "progress_pct": 1.5,
+  "size_bytes": 144978962,
+  "size": "138.3M",
+  "disk_avail_bytes": 1258040410112,
+  "disk_avail": "1.1T",
+  "disk_used_bytes": 245592743936,
+  "disk_used_pct": 15.5,
+  "start_date": "2026-09-04",
+  "end_date": "2026-10-04",
+  "assets": "BTC",
+  "exchanges": "binance",
+  "market": "both"
+}
