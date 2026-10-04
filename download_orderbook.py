@@ -37,7 +37,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # ---------------------------------------------------------------------------
 CHUNK_MINUTES = 30          # one parquet per 30-minute slice
 STATE_FILE    = Path("/workspace/.watch_state.json")
-LOCK_FILE     = Path("/workspace/.download_orderbook.pid")
+LOCK_FILE     = Path("/workspace/.download_orderbook._self_.pid")
 API_BASE      = os.environ.get("CRYPTOHFT_API_BASE",
                                 "https://api.cryptohft.com")
 HTTP_TIMEOUT  = 30          # per-chunk request timeout (seconds)
@@ -189,6 +189,16 @@ def fetch_chunk(session: requests.Session, exchange: str, asset: str,
             if r.status_code in (404, 204):
                 return b""
             raise RuntimeError(f"HTTP {r.status_code}: {r.text[:200]}")
+        except (requests.exceptions.SSLError,
+                requests.exceptions.ConnectionError,
+                requests.exceptions.Timeout) as net_err:
+            # Network-level failure — fast-fail after 1 retry, don't hammer.
+            if last_err is None:
+                last_err = net_err
+            if attempt < 2:
+                time.sleep(1)
+                continue
+            raise net_err
         except Exception as e:
             last_err = e
             if attempt < MAX_RETRIES:
@@ -252,7 +262,16 @@ def main():
 
     done = skip = fail = 0
     errors: list[str] = []
-    last_state_flush = 0.0
+
+    # Write an initial state BEFORE any network I/O so the watchdog always
+    # has something to read — even if the very first chunk times out.
+    update_state(build_state(
+        exchanges, assets, markets,
+        total, done, skip, fail, ["boot"], output_root,
+    ))
+    print(f"[state] initial state written to {STATE_FILE}", flush=True)
+
+    last_state_flush = time.time()
 
     try:
         for idx, (exch, asset, mkt, s, n) in enumerate(all_pairs, 1):
