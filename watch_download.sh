@@ -67,7 +67,7 @@ fi
 # ---------------------------------------------------------------------------
 # 3) Detect any live download_orderbook.py process (ps + our PID file)
 # ---------------------------------------------------------------------------
-ps_count=$(ps -eo pid,args | grep '[d]ownload_orderbook.py' | wc -l || true)
+ps_count=$(ps -eo comm,args | awk '$1=="python3" && /download_orderbook.py/ {print}' | wc -l || true)
 
 running_pid=""
 if [ -f "$DOWN_PID" ]; then
