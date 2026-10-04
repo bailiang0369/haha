@@ -80,14 +80,17 @@ def run_download(
                 )
                 print(
                     f"[download_orderbook] DONE  exchange={ex} symbol={sym} "
-                    f"path={result.path} downloaded={result.downloaded} "
-                    f"skipped={result.skipped} errors={result.errors}",
+                    f"path={result.path} files={result.files} "
+                    f"skipped={result.skipped} failed={len(result.failed)} "
+                    f"bytes={result.bytes} elapsed={result.elapsed_seconds:.1f}s",
                     flush=True,
                 )
             except Exception as exc:
                 failures += 1
+                import traceback
                 print(
-                    f"[download_orderbook] ERROR exchange={ex} symbol={sym}: {exc}",
+                    f"[download_orderbook] ERROR exchange={ex} symbol={sym}: {exc}\n"
+                    + traceback.format_exc(),
                     file=sys.stderr,
                     flush=True,
                 )
