@@ -15,14 +15,14 @@
     "output": "/workspace/data"
   },
   "expected": 1488,
-  "total": 10,
-  "spot": 10,
+  "total": 30,
+  "spot": 30,
   "futures": 0,
-  "progress": "10/1488 (0.7%)",
-  "size": "54.5MB",
-  "size_bytes": 57160655,
+  "progress": "30/1488 (2.0%)",
+  "size": "160.3MB",
+  "size_bytes": 168080362,
   "disk_avail": "1.1TB",
-  "disk_avail_bytes": 1253376425984,
+  "disk_avail_bytes": 1252915154944,
   "status": "running",
-  "last_update": "2026-10-04T06:21:04.112964Z"
+  "last_update": "2026-10-04T06:24:28.190826Z"
 }
