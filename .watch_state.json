@@ -1,0 +1,21 @@
+{
+  "start": "2026-09-04",
+  "end": "2026-10-04",
+  "assets": "BTC",
+  "market": "both",
+  "exchanges": "binance",
+  "expected_total": 1488,
+  "expected_spot": 744,
+  "expected_futures": 744,
+  "spot": 25,
+  "futures": 25,
+  "downloaded": 50,
+  "failed": 0,
+  "missing": 0,
+  "bytes": 682416511,
+  "progress": 3.36,
+  "status": "running",
+  "disk_avail_bytes": 1262116331520,
+  "disk_avail": "1.1TB",
+  "last_update": "2026-10-04T18:11:46.371675Z"
+}

@@ -1,0 +1,6 @@
+[2026-10-04T18:04:09Z] START download_orderbook.py (start=2026-09-04 end=2026-10-04 assets=BTC market=both)
+[2026-10-04T18:04:11Z] downloader PID=2957
+[2026-10-04T18:04:13Z] STATE total=1488 downloaded=0 progress=0.0%
+[2026-10-04T18:10:37Z] START download_orderbook.py (start=2026-09-04 end=2026-10-04 assets=BTC market=both)
+[2026-10-04T18:10:40Z] downloader PID=3571 (setsid+disown)
+[2026-10-04T18:10:41Z] STATE total=1488 downloaded=0 progress=0.0%

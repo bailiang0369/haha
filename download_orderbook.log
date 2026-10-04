@@ -1,0 +1,30 @@
+/workspace/download_orderbook.py:190: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  "last_update": datetime.utcnow().isoformat() + "Z",
+/workspace/download_orderbook.py:22: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  ts = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+[2026-10-04T18:04:10Z] START total=1488 spot=744 fut=744 existing=0
+[2026-10-04T18:04:10Z] START total=1488 spot=744 fut=744 existing=0
+[2026-10-04T18:04:51Z] START total=1488 spot=744 fut=744 existing=0
+[2026-10-04T18:05:52Z] PROGRESS 5/1488 downloaded=5 spot=3 fut=2 failed=0 size=58.8MB
+[2026-10-04T18:06:20Z] PROGRESS 10/1488 downloaded=10 spot=5 fut=5 failed=0 size=121.7MB
+[2026-10-04T18:07:06Z] PROGRESS 15/1488 downloaded=15 spot=8 fut=7 failed=0 size=173.5MB
+[2026-10-04T18:07:41Z] PROGRESS 20/1488 downloaded=20 spot=10 fut=10 failed=0 size=248.0MB
+[2026-10-04T18:08:22Z] PROGRESS 25/1488 downloaded=25 spot=13 fut=12 failed=0 size=308.9MB
+[2026-10-04T18:09:07Z] PROGRESS 30/1488 downloaded=30 spot=15 fut=15 failed=0 size=449.7MB
+[2026-10-04T18:09:41Z] PROGRESS 35/1488 downloaded=35 spot=18 fut=17 failed=0 size=509.9MB
+/workspace/download_orderbook.py:190: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  "last_update": datetime.utcnow().isoformat() + "Z",
+/workspace/download_orderbook.py:22: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  ts = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+[2026-10-04T18:10:37Z] START total=1488 spot=744 fut=744 existing=39
+[2026-10-04T18:10:37Z] START total=1488 spot=744 fut=744 existing=39
+/workspace/download_orderbook.py:230: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  "last_update": datetime.utcnow().isoformat() + "Z",
+[2026-10-04T18:10:45Z] PROGRESS 40/1488 downloaded=40 spot=20 fut=20 failed=0 size=567.0MB
+[2026-10-04T18:10:45Z] PROGRESS 40/1488 downloaded=40 spot=20 fut=20 failed=0 size=567.0MB
+[2026-10-04T18:11:20Z] PROGRESS 45/1488 downloaded=45 spot=23 fut=22 failed=0 size=607.5MB
+[2026-10-04T18:11:20Z] PROGRESS 45/1488 downloaded=45 spot=23 fut=22 failed=0 size=607.5MB
+[2026-10-04T18:11:46Z] PROGRESS 50/1488 downloaded=50 spot=25 fut=25 failed=0 size=650.8MB
+[2026-10-04T18:11:46Z] PROGRESS 50/1488 downloaded=50 spot=25 fut=25 failed=0 size=650.8MB
+[2026-10-04T18:12:09Z] PROGRESS 55/1488 downloaded=55 spot=28 fut=27 failed=0 size=685.8MB
+[2026-10-04T18:12:09Z] PROGRESS 55/1488 downloaded=55 spot=28 fut=27 failed=0 size=685.8MB
