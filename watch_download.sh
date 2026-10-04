@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # BTC L2 Orderbook 下载看门狗
-# 每次触发都做全链路恢复 / 并发守护 / 状态汇报
+# 每次触发都做全链路恢复 / 并发守护 / 前台下载 / 状态汇报
+# download_orderbook.py 自身会分批 (4 chunks × 5 天), 跑完即退出
 # Usage: bash watch_download.sh
 
 set -u
@@ -9,7 +10,6 @@ WORKSPACE="/workspace"
 DOWNLOAD_PY="${WORKSPACE}/download_orderbook.py"
 STATE_JSON="${WORKSPACE}/.watch_state.json"
 LOG_FILE="${WORKSPACE}/.watch_download.log"
-PID_FILE="${WORKSPACE}/.download.pid"
 API_KEY_FILE="${WORKSPACE}/.cryptohft_key"
 DATA_DIR="${WORKSPACE}/data"
 
@@ -51,7 +51,6 @@ ensure_api_key() {
 }
 
 ensure_scripts() {
-    # download_orderbook.py - 必须是 git tracked 的
     if [[ ! -f "${DOWNLOAD_PY}" ]]; then
         log "download_orderbook.py missing, trying git checkout..."
         git -C "${WORKSPACE}" checkout download_orderbook.py 2>>"${LOG_FILE}" || {
@@ -59,43 +58,30 @@ ensure_scripts() {
             return 1
         }
     fi
-    # watch_download.sh 自身
+    # self
     if [[ ! -x "${BASH_SOURCE[0]}" ]]; then
         chmod +x "${BASH_SOURCE[0]}"
     fi
     return 0
 }
 
-# -------- 1. 并发守护 --------
+# -------- 1. 并发守护 (defense in depth) --------
 is_download_running() {
-    # 用 ps grep 匹配 download_orderbook.py, 排除自己的 grep 进程
-    if pgrep -f "[d]ownload_orderbook.py" >/dev/null 2>&1; then
-        return 0
-    fi
-    return 1
+    pgrep -f "[d]ownload_orderbook.py" >/dev/null 2>&1
 }
 
-kill_stale_pid_file() {
-    if [[ -f "${PID_FILE}" ]]; then
-        local pid
-        pid=$(cat "${PID_FILE}")
-        if ! kill -0 "${pid}" 2>/dev/null; then
-            log "stale pid file ${PID_FILE} (pid=${pid} not alive), removing"
-            rm -f "${PID_FILE}"
-        fi
-    fi
-}
-
-# -------- 2. 启动下载 --------
-start_download() {
+# -------- 2. 前台同步下载 --------
+run_download() {
     local api_key
     api_key=$(cat "${API_KEY_FILE}")
 
     mkdir -p "${DATA_DIR}"
     export CRYPTOHFTDATA_API_KEY="${api_key}"
 
-    log "starting download_orderbook.py in background"
-    nohup python3 "${DOWNLOAD_PY}" \
+    log "foreground-running download_orderbook.py (batch mode, exits after 4 chunks)"
+    local start_ts
+    start_ts=$(date +%s)
+    python3 "${DOWNLOAD_PY}" \
         --start "${START_DATE}" \
         --end "${END_DATE}" \
         --assets "${ASSETS}" \
@@ -103,24 +89,16 @@ start_download() {
         --exchanges "${EXCHANGES}" \
         --output "${DATA_DIR}" \
         --api-key "${api_key}" \
-        >> "${LOG_FILE}" 2>&1 &
-    local pid=$!
-    echo "${pid}" > "${PID_FILE}"
-    log "download pid=${pid}"
-    sleep 2
-    if is_download_running; then
-        log "download process confirmed alive"
-    else
-        log "ERROR: download process died immediately, check ${LOG_FILE}"
-        rm -f "${PID_FILE}"
-        return 1
-    fi
-    return 0
+        >> "${LOG_FILE}" 2>&1
+    local rc=$?
+    local end_ts
+    end_ts=$(date +%s)
+    log "download_orderbook.py rc=${rc} elapsed=$((end_ts - start_ts))s"
+    return ${rc}
 }
 
 # -------- 3. 状态采集 --------
 collect_expected() {
-    # 31 days * 24h * 1 symbol * 2 exchanges (binance_spot + binance_futures)
     python3 -c "
 from datetime import date
 s='${START_DATE}'.split('-'); e='${END_DATE}'.split('-')
@@ -162,16 +140,14 @@ write_state() {
     size=$(collect_size)
     disk_avail=$(collect_disk)
 
-    progress=0
-    pct=0
+    progress=0; pct=0
     if [[ "${expected}" -gt 0 ]]; then
         progress=$(echo "${total} ${expected}" | awk '{printf "%.0f", $1/$2*100}')
         pct=$(echo "${total} ${expected}" | awk '{printf "%.2f", $1/$2*100}')
     fi
 
     if is_download_running; then
-        running="true"
-        status="downloading"
+        running="true"; status="downloading"
     else
         running="false"
         if [[ "${total}" -ge "${expected}" && "${expected}" -gt 0 ]]; then
@@ -206,7 +182,7 @@ write_state() {
   }
 }
 EOF
-    log "state: total=${total}/${expected} spot=${spot} futures=${futures} progress=${progress}% status=${status} running=${running}"
+    log "state: total=${total}/${expected} spot=${spot} futures=${futures} progress=${progress}% status=${status}"
 }
 
 # -------- main --------
@@ -216,13 +192,11 @@ main() {
     ensure_pip          || { log "ABORT: pip";   exit 1; }
     ensure_api_key      || { log "ABORT: key";   exit 1; }
     ensure_scripts      || { log "ABORT: scripts"; exit 1; }
-    kill_stale_pid_file
 
     if is_download_running; then
         log "download_orderbook.py already running - skip start"
     else
-        log "download not running - starting"
-        start_download || log "start_download failed, will retry next trigger"
+        run_download || log "run_download rc=$? (may retry next trigger)"
     fi
 
     write_state

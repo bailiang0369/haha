@@ -17,7 +17,7 @@ import os
 import sys
 import subprocess
 import time
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from pathlib import Path
 
 # SDK exchange 名称映射: 用户输入 -> cryptohftdata 实际 exchange 值
@@ -147,18 +147,43 @@ def main():
     print("=" * 72, flush=True)
 
     overall_rc = 0
+    # 分批跑, 每批 5 天 (进程主动退出避免沙箱回收)
+    CHUNK_DAYS = 5
+    MAX_CHUNKS_PER_RUN = 4  # 每次启动最多 4 批 = 20 天, 约 20s 内结束
+
+    total_chunks = 0
     for ex in exchanges:
-        rc = run_bulk(ex, symbols, args.start, args.end, args.output, api_key)
-        if rc != 0:
-            overall_rc = rc
-            print(f"WARN: {ex} bulk returned rc={rc}, continuing with remaining", flush=True)
+        d0 = date.fromisoformat(args.start)
+        d1 = date.fromisoformat(args.end)
+        cur = d0
+        ex_done = False
+        while cur <= d1 and total_chunks < MAX_CHUNKS_PER_RUN:
+            end_chunk = min(cur + timedelta(days=CHUNK_DAYS - 1), d1)
+            rc = run_bulk(
+                ex, symbols,
+                cur.isoformat(), end_chunk.isoformat(),
+                args.output, api_key,
+            )
+            total_chunks += 1
+            if rc != 0:
+                overall_rc = rc
+                print(f"WARN: {ex} chunk {cur}-{end_chunk} rc={rc}, skipping rest of exchange", flush=True)
+                break
+            cur = end_chunk + timedelta(days=1)
+        else:
+            if cur > d1:
+                ex_done = True
+
+        if total_chunks >= MAX_CHUNKS_PER_RUN:
+            print(f"Reached MAX_CHUNKS_PER_RUN={MAX_CHUNKS_PER_RUN}, will resume next run", flush=True)
+            break
 
     # 最终统计
     total = count_hourly_files(args.output)
     pct = (total / expected * 100) if expected > 0 else 0
 
     print("=" * 72, flush=True)
-    print(f"SUMMARY: total={total}/{expected}  ({pct:.1f}%)", flush=True)
+    print(f"SUMMARY: total={total}/{expected}  ({pct:.1f}%)  chunks_run={total_chunks}", flush=True)
     print("=" * 72, flush=True)
 
     sys.exit(overall_rc)
