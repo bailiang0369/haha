@@ -1,0 +1,48 @@
+{
+  "pid": 4902,
+  "exchanges": [
+    "binance"
+  ],
+  "assets": [
+    "BTC"
+  ],
+  "markets": [
+    "spot",
+    "futures"
+  ],
+  "chunk_minutes": 30,
+  "total": 2880,
+  "spot": 0,
+  "futures": 0,
+  "expected": 2880,
+  "progress": 0.0,
+  "done": 0,
+  "skipped": 0,
+  "failed": 65,
+  "total_size_mb": 0.0,
+  "disk_avail_gb": 1099.54,
+  "status": "error",
+  "errors": [
+    "[binance/spot/BTC/2230-2300] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788561000&end=1788562800&granulari",
+    "[binance/spot/BTC/2300-2330] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788562800&end=1788564600&granulari",
+    "[binance/spot/BTC/2330-0000] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788564600&end=1788566400&granulari",
+    "[binance/spot/BTC/0000-0030] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788566400&end=1788568200&granulari",
+    "[binance/spot/BTC/0030-0100] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788568200&end=1788570000&granulari",
+    "[binance/spot/BTC/0100-0130] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788570000&end=1788571800&granulari",
+    "[binance/spot/BTC/0130-0200] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788571800&end=1788573600&granulari",
+    "[binance/spot/BTC/0200-0230] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788573600&end=1788575400&granulari",
+    "[binance/spot/BTC/0230-0300] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788575400&end=1788577200&granulari",
+    "[binance/spot/BTC/0300-0330] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788577200&end=1788579000&granulari",
+    "[binance/spot/BTC/0330-0400] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788579000&end=1788580800&granulari",
+    "[binance/spot/BTC/0400-0430] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788580800&end=1788582600&granulari",
+    "[binance/spot/BTC/0430-0500] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788582600&end=1788584400&granulari",
+    "[binance/spot/BTC/0500-0530] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788584400&end=1788586200&granulari",
+    "[binance/spot/BTC/0530-0600] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788586200&end=1788588000&granulari",
+    "[binance/spot/BTC/0600-0630] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788588000&end=1788589800&granulari",
+    "[binance/spot/BTC/0630-0700] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788589800&end=1788591600&granulari",
+    "[binance/spot/BTC/0700-0730] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788591600&end=1788593400&granulari",
+    "[binance/spot/BTC/0730-0800] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788593400&end=1788595200&granulari",
+    "[binance/spot/BTC/0800-0830] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788595200&end=1788597000&granulari"
+  ],
+  "updated_at": "2026-10-04T21:13:30.155752+00:00"
+}

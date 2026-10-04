@@ -1,0 +1,50 @@
+[2026-10-04T21:05:34Z] [watch] downloader_processes=0 registered_pid=
+[2026-10-04T21:05:34Z] [watch] Starting downloader (python3 /workspace/download_orderbook.py ...)
+[2026-10-04T21:05:34Z] [watch] Downloader pid=3706 launched
+[init] 2880 chunks (1 exch × 1 asset × 2 mkt × window 2026-09-04..2026-10-04)
+[2026-10-04T21:05:37Z] [watch][watch_run] no .watch_state.json yet
+[2026-10-04T21:05:37Z] [watch] Exit cleanly.
+[2026-10-04T21:10:48Z] [watch] downloader_processes=2 registered_pid=
+
+=== watch_state [watch_run] ===
+  pid            = 4374
+  total          = 2880
+  spot           = 0
+  futures        = 0
+  expected       = 2880
+  progress       = 0.0
+  done           = 0
+  skipped        = 0
+  failed         = 0
+  total_size_mb  = 0.0
+  disk_avail_gb  = 1099.56
+  status         = error
+  updated_at     = 2026-10-04T21:10:26.167969+00:00
+  errors(1) :
+    - boot
+{"title": "watch_run", "total": 2880, "spot": 0, "futures": 0, "expected": 2880, "progress": 0.0, "size_mb": 0.0, "disk_gb": 1099.56, "status": "error", "done": 0, "failed": 0}
+[2026-10-04T21:10:48Z] [watch] Exit cleanly.
+[2026-10-04T21:12:55Z] [watch] downloader_processes=1 registered_pid=
+
+=== watch_state [watch_run] ===
+  pid            = 4902
+  total          = 2880
+  spot           = 0
+  futures        = 0
+  expected       = 2880
+  progress       = 0.0
+  done           = 0
+  skipped        = 0
+  failed         = 35
+  total_size_mb  = 0.0
+  disk_avail_gb  = 1099.56
+  status         = error
+  updated_at     = 2026-10-04T21:12:55.956173+00:00
+  errors(20) :
+    - [binance/spot/BTC/1500-1530] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788534000&end=1788535800&granulari
+    - [binance/spot/BTC/1530-1600] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788535800&end=1788537600&granulari
+    - [binance/spot/BTC/1600-1630] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788537600&end=1788539400&granulari
+    - [binance/spot/BTC/1630-1700] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788539400&end=1788541200&granulari
+    - [binance/spot/BTC/1700-1730] SSLError: HTTPSConnectionPool(host='api.cryptohft.com', port=443): Max retries exceeded with url: /v1/orderbook/BTC/binance/spot?start=1788541200&end=1788543000&granulari
+{"title": "watch_run", "total": 2880, "spot": 0, "futures": 0, "expected": 2880, "progress": 0.0, "size_mb": 0.0, "disk_gb": 1099.56, "status": "error", "done": 0, "failed": 35}
+[2026-10-04T21:12:56Z] [watch] Exit cleanly.
