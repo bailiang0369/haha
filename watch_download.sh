@@ -58,7 +58,7 @@ if [ -z "$DOWNLOAD_PID" ]; then
     API_KEY=$(cat "$API_KEY_FILE")
 
     log "启动 download_orderbook.py 后台进程"
-    nohup python3 "${WORKSPACE}/download_orderbook.py" \
+    nohup env PYTHONUNBUFFERED=1 stdbuf -oL -eL python3 "${WORKSPACE}/download_orderbook.py" \
         --start "$START" --end "$END" \
         --assets "$ASSETS" --market "$MARKET" \
         --exchanges "$EXCHANGES" \
