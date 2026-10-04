@@ -299,8 +299,8 @@ def main() -> int:
         skip = 0
         fail = 0
 
-        for idx, (api_path, local_rel, _fn) in enumerate(plan, 1):
-            local_path = out_root / local_rel
+        for idx, (_ex_dir, api_path, _fn) in enumerate(plan, 1):
+            local_path = out_root / api_path
             if local_path.exists() and local_path.stat().st_size >= 1000:
                 skip += 1
                 done += 1
