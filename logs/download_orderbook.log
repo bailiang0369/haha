@@ -1,0 +1,8 @@
+/workspace/download_orderbook.py:280: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  "last_update": dt.datetime.utcnow().isoformat() + "Z",
+/workspace/download_orderbook.py:280: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  "last_update": dt.datetime.utcnow().isoformat() + "Z",
+/workspace/download_orderbook.py:280: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  "last_update": dt.datetime.utcnow().isoformat() + "Z",
+/workspace/download_orderbook.py:338: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  "last_update": dt.datetime.utcnow().isoformat() + "Z",

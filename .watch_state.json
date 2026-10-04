@@ -1,0 +1,28 @@
+{
+  "config": {
+    "start": "2026-09-04",
+    "end": "2026-10-04",
+    "assets": [
+      "BTC"
+    ],
+    "market": [
+      "spot",
+      "futures"
+    ],
+    "exchanges": [
+      "binance"
+    ],
+    "output": "/workspace/data"
+  },
+  "expected": 1488,
+  "total": 10,
+  "spot": 10,
+  "futures": 0,
+  "progress": "10/1488 (0.7%)",
+  "size": "54.5MB",
+  "size_bytes": 57160655,
+  "disk_avail": "1.1TB",
+  "disk_avail_bytes": 1253376425984,
+  "status": "running",
+  "last_update": "2026-10-04T06:21:04.112964Z"
+}
