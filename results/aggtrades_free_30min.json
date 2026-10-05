@@ -1,0 +1,30 @@
+{
+  "auc": 0.5097,
+  "thr_bps": 10.81,
+  "total": 100736,
+  "results_by_conf": [
+    {
+      "conf": 0.0,
+      "n": 100736,
+      "acc_no_cb": 51.0,
+      "cb_n": 2054,
+      "cb_acc": 72.3,
+      "cb_min100": 50.0,
+      "exp_cent_r080": 30.1,
+      "exp_cent_r085": 33.8
+    },
+    {
+      "conf": 0.3,
+      "n": 1267,
+      "acc_no_cb": 54.4,
+      "cb_n": 303,
+      "cb_acc": 51.8,
+      "cb_min100": 36.0,
+      "exp_cent_r080": -6.7,
+      "exp_cent_r085": -4.1
+    }
+  ],
+  "horizon_min": 30,
+  "method": "\u514d\u8d39aggTrades\u91cd\u5efamid",
+  "step_bar": 180
+}
