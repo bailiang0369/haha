@@ -47,7 +47,11 @@ def build_day(day_files: list[Path], interval: int, top_n: int) -> pl.DataFrame:
     sampled_hours = []
 
     for f in day_files:
-        piv = pivot_hour(f, top_n)
+        try:
+            piv = pivot_hour(f, top_n)
+        except Exception as e:
+            print(f"    ⚠️ 跳过坏文件 {os.path.basename(f)}: {e}")
+            continue
         if piv.height == 0:
             continue
 
