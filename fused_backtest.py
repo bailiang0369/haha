@@ -17,13 +17,13 @@ def log(msg): print(msg, flush=True)
 
 # ========== 1. 加载 L2 cache ==========
 log(f"[{time.time()-t0:.0f}s] 1. 加载 L2 cache...")
-l2 = pl.read_parquet('/workspace/data/l2_spot_mid_10s.parquet')
+l2 = pl.read_parquet('/workspace/data/l2_spot_mid_10s_v6.parquet')
 l2 = l2.filter(pl.col('spread_bps') > -10)  # 过滤坏 bucket
 l2_b = l2['bucket'].to_numpy().astype(np.int64)
 l2_m = l2['mid'].to_numpy().astype(np.float64)
 l2_sp = l2['spread_bps'].to_numpy().astype(np.float64)
-l2_bk = l2['book_imb'].to_numpy().astype(np.float64)
-l2_nu = l2['nu'].to_numpy().astype(np.float64)
+l2_bk = np.full(len(l2_m), np.nan)  # v6 没有 book_imb
+l2_nu = np.full(len(l2_m), np.nan)  # v6 没有 nu
 del l2
 
 # ========== 2. 加载 aggTrades ==========
