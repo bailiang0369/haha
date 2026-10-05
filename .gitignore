@@ -1,7 +1,17 @@
-node_modules/
-target/
+# 大数据产物 — 不 commit
+data/
+snapshots/
+models/*.txt
+
+# Python
 __pycache__/
-.env
-dist/
+*.pyc
+*.tmp
+*.parquet
 *.log
+
+# Jupyter
+.ipynb_checkpoints/
+
+# 系统
 .DS_Store
