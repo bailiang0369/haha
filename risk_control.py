@@ -55,8 +55,9 @@ def walk_forward_predict(merged, feat_cols):
         future_ret[i] = (mid[i+step]-mid[i])/mid[i]
 
     day_starts = sorted(set(ts // 86400000))
-    ret0 = future_ret[(ts >= to_ts(2026,9,4)) & (ts < to_ts(2026,9,11)) & ~np.isnan(future_ret)]
-    thr_label = abs(np.quantile(ret0, 0.25))
+    # thr_label 必须从训练窗口算 (前 7 天), 避免用测试天泄露
+    ret0_mask = (ts // 86400000 < day_starts[7]) & ~np.isnan(future_ret)
+    thr_label = abs(np.quantile(future_ret[ret0_mask], 0.25))
 
     rows = []
     for day_i in range(7, len(day_starts)):
@@ -110,7 +111,11 @@ class RiskControlResult:
 
 
 class ConsecutiveLossCircuitBreaker:
-    """连续亏损熔断: 连续亏 N 笔 → 暂停 PAUSE_MIN 分钟."""
+    """连续亏损熔断: 连续亏 N 笔 → 暂停 PAUSE_MIN 分钟.
+
+    peek()   — 只读检查当前是否在暂停期内, 不修改状态 (用于进场 gate)
+    register() — 结算一笔已执行交易的对错, 更新 streak / 触发熔断
+    """
 
     def __init__(self, n_loss: int = 8, pause_min: int = 30):
         self.n_loss = n_loss
@@ -118,10 +123,12 @@ class ConsecutiveLossCircuitBreaker:
         self.loss_streak = 0
         self.pause_until = 0
 
-    def check(self, ts: int, pred_correct: bool) -> bool:
-        """返回是否允许交易."""
-        if ts < self.pause_until:
-            return False
+    def peek(self, ts: int) -> bool:
+        """只读: 当前是否允许进场 (不修改任何状态)."""
+        return ts >= self.pause_until
+
+    def register(self, ts: int, pred_correct: bool) -> None:
+        """结算一笔已执行交易的对错. 必须且仅能在 trade 真正执行时调用一次."""
         if pred_correct:
             self.loss_streak = 0
         else:
@@ -129,7 +136,6 @@ class ConsecutiveLossCircuitBreaker:
             if self.loss_streak >= self.n_loss:
                 self.pause_until = ts + self.pause_ms
                 self.loss_streak = 0
-        return True
 
 
 class VolatilityRegimeDetector:
@@ -230,14 +236,14 @@ def run_with_filters(rows, conf_threshold: float = 0.7,
             t["allow"] = False
             continue
 
-        # 连续亏损熔断
-        if not breaker.check(t["ts"], t["correct"]):
+        # 连续亏损熔断 (peek = 只读 gate, 不改状态)
+        if not breaker.peek(t["ts"]):
             skipped["breaker"] += 1
             t["allow"] = False
             continue
 
-        # 允许交易, 但后续检查结果时要喂给 breaker
-        breaker.check(t["ts"], t["correct"])  # 更新 streak
+        # 允许交易, register = 结算这一笔的对错 (只调一次)
+        breaker.register(t["ts"], t["correct"])
         trades.append(t)
 
     return trades, skipped

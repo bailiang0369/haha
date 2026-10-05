@@ -22,8 +22,9 @@ def load_all(snap_dir: Path, market: str, prefix: str) -> pl.DataFrame:
     return pl.concat(dfs)
 
 def merge_features(spot: pl.DataFrame, fut: pl.DataFrame) -> pl.DataFrame:
+    """backward asof join: fut t 时刻对齐 spot 不晚于 t 的最近快照 (避免前瞻泄露)."""
     return fut.sort("ts_ms").join_asof(
-        spot.sort("ts_ms"), on="ts_ms", strategy="nearest", tolerance=5000
+        spot.sort("ts_ms"), on="ts_ms", strategy="backward", tolerance=5000
     )
 
 # ============== 2. Label (按分位数均衡) ==============
