@@ -1,0 +1,42 @@
+{
+  "config": {
+    "train_days": 15,
+    "top_hours": [
+      3,
+      4,
+      5,
+      7,
+      11,
+      13,
+      15,
+      20
+    ],
+    "sigma_q": 0.7,
+    "horizon_min": 10,
+    "monitor_W": 20,
+    "monitor_THR": 0.47,
+    "model": "LogisticRegression(C=0.5)"
+  },
+  "base": {
+    "n": 13401,
+    "acc": 53.5,
+    "min100": 0.0
+  },
+  "regime_monitor_full": {
+    "n": 7545,
+    "acc": 78.1,
+    "min100": 52.0,
+    "min500": 67.6,
+    "exp_cents": 40.6,
+    "daily": 538.9
+  },
+  "regime_monitor_exec_only": {
+    "n": 35,
+    "acc": 65.7,
+    "min100": 0
+  },
+  "shuffle_validation": {
+    "real_min100": 52.0,
+    "shuf_min100": 37.0,
+    "drop": 15.0,
+    "passed": 
