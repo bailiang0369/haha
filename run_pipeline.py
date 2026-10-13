@@ -322,6 +322,7 @@ def build_trade_window_stats(trades: pl.DataFrame, target_ts: int) -> dict[int, 
 
 
 def generate_klines(trades: pl.DataFrame) -> pl.DataFrame:
+    """K 线 close_time 强制对齐到 UTC 整点 + n*60s。"""
     trades = trades.with_columns(pl.from_epoch("ts_ms", time_unit="ms").alias("dt"))
 
     klines = trades.group_by_dynamic(
@@ -334,6 +335,14 @@ def generate_klines(trades: pl.DataFrame) -> pl.DataFrame:
         pl.col("quantity").sum().alias("volume"),
         (pl.col("price") * pl.col("quantity")).sum().alias("quote_volume"),
         pl.col("ts_ms").last().alias("close_ts_ms"),
+    ])
+
+    # —— 关键：把 close_ts_ms 强制对齐到 UTC 整点 + n*60000ms ——
+    # Binance 的 1m K 线应该落在 ...00, ...60, ...120 秒（UTC）
+    # 但 group_by_dynamic 从第一条 trade 的 ts 开始滚动，导致 close_ts_ms 有微秒级偏移
+    # 修正：用 floor 到分钟再乘 60000ms
+    klines = klines.with_columns([
+        (pl.col("close_ts_ms") // 60000 * 60000).alias("close_ts_ms"),
     ])
 
     klines = klines.with_columns([
@@ -380,13 +389,76 @@ def bootstrap_from_first_update(ob_grouped: pl.DataFrame,
     return int(first["final_update_id"])
 
 
+def _prepare_hourly_orderbook(ob_file: str) -> tuple[pl.DataFrame, int, int]:
+    """加载单小时 orderbook 并 group_by。返回 (grouped_df, first_event_ms, last_event_ms)。"""
+    ob = pl.read_parquet(ob_file)
+    ob = ob.with_columns([
+        pl.col("price").cast(pl.Float64),
+        pl.col("quantity").cast(pl.Float64),
+        pl.col("first_update_id").cast(pl.Int64),
+        pl.col("prev_final_update_id").cast(pl.Int64),
+        pl.col("final_update_id").cast(pl.Int64),
+    ])
+    ob = ob.sort(["event_time", "first_update_id", "side", "price"])
+    ob_grouped = ob.group_by(["first_update_id"], maintain_order=True).agg([
+        pl.col("event_time").first().alias("event_time"),
+        pl.col("prev_final_update_id").first().alias("prev_final_update_id"),
+        pl.col("final_update_id").first().alias("final_update_id"),
+        pl.col("side").alias("sides"),
+        pl.col("price").alias("prices"),
+        pl.col("quantity").alias("quantities"),
+    ])
+    first_ev = int(ob_grouped["event_time"][0])
+    last_ev = int(ob_grouped["event_time"][-1])
+    del ob
+    return ob_grouped, first_ev, last_ev
+
+
+def _apply_update(book: L2Book,
+                  aggregator: EventAggregator,
+                  row: dict,
+                  prev_final: int | None) -> int:
+    """对一条 orderbook update 执行 gap-check + book.apply + aggregator.on_depth_update。
+    返回本 update 的 final_update_id，作为下一条的 prev_final 基准。"""
+    pfid_raw = row["prev_final_update_id"]
+    final = int(row["final_update_id"])
+    pfid = int(pfid_raw) if pfid_raw is not None else -1
+
+    if prev_final is not None and pfid != prev_final:
+        # gap → 用当前 update 快照重置 book + aggregator
+        book.bids.clear(); book.asks.clear()
+        aggregator = EventAggregator(WINDOWS)
+        for side, p, q in zip(row["sides"], row["prices"], row["quantities"]):
+            if q > 0:
+                (book.bids if side == "bid" else book.asks)[p] = q
+                if side == "bid": aggregator.bid_last_qty[p] = q
+                else: aggregator.ask_last_qty[p] = q
+        book._bid_sorted = sorted(book.bids.keys())
+        book._ask_sorted = sorted(book.asks.keys())
+        book.update_mid()
+        book._maintain_window()
+
+    et = int(row["event_time"])
+    bid_changes, ask_changes = [], []
+    for side, p, q in zip(row["sides"], row["prices"], row["quantities"]):
+        book.apply(p, q, side)
+        if side == "bid": bid_changes.append((p, q))
+        else: ask_changes.append((p, q))
+    aggregator.on_depth_update(et, bid_changes, ask_changes)
+    return final
+
+
 def run_for_exchange(exchange: str):
+    from datetime import datetime, timezone
+    def ms_to_str(ms):
+        return datetime.fromtimestamp(ms / 1000, tz=timezone.utc).strftime("%H:%M:%S.%f")[:-3]
+
     print(f"\n{'='*60}")
     print(f"[exchange={exchange}] 开始处理 {DATE}")
     print(f"{'='*60}")
     t0 = time.time()
 
-    # ---- 1. 加载 trades + 生成 klines（小数据，一次加载） ----
+    # ---- 1. 加载 trades + 生成 klines ----
     print("📦 加载 aggTrades ...")
     trades = load_aggtrades(exchange)
     print(f"   trades: {trades.height:,} 行, "
@@ -394,197 +466,166 @@ def run_for_exchange(exchange: str):
 
     print("📊 生成 1m K 线 ...")
     klines = generate_klines(trades)
-    close_times = klines["close_ts_ms"].to_list()
-    n_klines = len(close_times)
-    print(f"   klines: {n_klines} 根")
+    close_times_all = klines["close_ts_ms"].to_list()
+    print(f"   klines (全天): {len(close_times_all)} 根")
 
-    # ---- 2. 初始化全局状态（跨小时保留） ----
-    book = L2Book(BOOK_WINDOW)
-    aggregator = EventAggregator(WINDOWS)
-    prev_final = None  # 首文件 bootstrap 后赋值
-    feat_rows = []
-
-    # ---- 3. 逐小时处理 orderbook ----
+    # ---- 2. 扫描 orderbook 文件，确定有效 K 线窗口 ----
     ob_files = sorted(glob.glob(
         f"{DATA_DIR}/orderbook/{exchange}_{SYMBOL}_{DATE}_*.parquet"))
     if not ob_files:
         print(f"❌ 没找到 orderbook 文件")
         return
 
-    print(f"📂 逐小时处理 {len(ob_files)} 个 orderbook parquet ...")
-    bar_ptr = 0  # 当前推进到第几根 K 线
+    # 只扫首尾 event_time 用来裁剪窗口（polars lazy scan 只读 event_time 列）
+    print(f"📂 发现 {len(ob_files)} 个 orderbook 文件，扫描时间范围 ...")
+    all_first_ev = []
+    all_last_ev = []
+    for f in ob_files:
+        t = pl.scan_parquet(f).select([
+            pl.col("event_time").min().alias("mn"),
+            pl.col("event_time").max().alias("mx"),
+        ]).collect()
+        all_first_ev.append(int(t["mn"][0]))
+        all_last_ev.append(int(t["mx"][0]))
+
+    ob_earliest = min(all_first_ev)   # 整个 orderbook 最早事件
+    ob_latest = max(all_last_ev)      # 整个 orderbook 最晚事件
+    print(f"   orderbook event_time 范围: [{ob_earliest} ({ms_to_str(ob_earliest)}) "
+          f"~ {ob_latest} ({ms_to_str(ob_latest)})]")
+
+    # 精确裁剪 K 线窗口：
+    #   close_ts_ms = T 覆盖 [T-60000, T)，需要 event_time < T
+    #   首条 K 线必须 T > ob_earliest（否则没有任何 pre-close 的 update）
+    #   末条 K 线必须 T - 60000 <= ob_latest（否则 bar 起点超出 orderbook 覆盖）
+    close_times = [t for t in close_times_all
+                   if t > ob_earliest and (t - 60000) <= ob_latest]
+    print(f"   裁剪后有效 K 线: {len(close_times)} 根  "
+          f"[{close_times[0]} ({ms_to_str(close_times[0])}) "
+          f"~ {close_times[-1]} ({ms_to_str(close_times[-1])})]")
+
+    # ---- 3. 初始化状态 ----
+    book = L2Book(BOOK_WINDOW)
+    aggregator = EventAggregator(WINDOWS)
+    feat_rows = []
+
+    # ---- 4. 跨小时连续流式消费 update ----
+    print(f"\n🔄 逐小时流式 replay orderbook ...")
+    n_klines = len(close_times)
+    bar_ptr = 0
     total_updates = 0
     t_replay = time.time()
 
-    for fidx, ob_file in enumerate(ob_files):
-        print(f"\n   [{fidx+1}/{len(ob_files)}] {os.path.basename(ob_file)}")
-        t_hour = time.time()
+    # 逐小时加载，但 u_idx 跨小时不重置
+    file_idx = 0            # 当前处理到第几个 hour 文件
+    u_idx = 0               # 当前文件内的 update 指针
+    prev_final_id: int | None = None   # 上一条 update 的 final_update_id（gap 检测用）
+    gap_count = 0
 
-        # 加载单小时 orderbook + group_by
-        ob = pl.read_parquet(ob_file)
-        ob = ob.with_columns([
-            pl.col("price").cast(pl.Float64),
-            pl.col("quantity").cast(pl.Float64),
-            pl.col("first_update_id").cast(pl.Int64),
-            pl.col("prev_final_update_id").cast(pl.Int64),
-            pl.col("final_update_id").cast(pl.Int64),
-        ])
-        ob = ob.sort(["event_time", "first_update_id", "side", "price"])
-        ob_grouped = ob.group_by(["first_update_id"], maintain_order=True).agg([
-            pl.col("event_time").first().alias("event_time"),
-            pl.col("prev_final_update_id").first().alias("prev_final_update_id"),
-            pl.col("final_update_id").first().alias("final_update_id"),
-            pl.col("side").alias("sides"),
-            pl.col("price").alias("prices"),
-            pl.col("quantity").alias("quantities"),
-        ])
-
-        n_updates = ob_grouped.height
-        update_times = ob_grouped["event_time"].to_list()
-        total_updates += n_updates
-        print(f"     {ob.height:,} 行 → {n_updates:,} 条 update, "
-              f"[{update_times[0]} ~ {update_times[-1]}]")
-
-        # bootstrap（首文件）或检查连续性（后续文件）
-        if prev_final is None:
-            prev_final = bootstrap_from_first_update(ob_grouped, book, aggregator)
-            u_idx = 1  # 跳过 bootstrap 那条
-            print(f"     bootstrap 完成: mid={book.mid:.2f}")
-        else:
-            first_pfid_raw = ob_grouped.row(0, named=True)["prev_final_update_id"]
-            first_pfid = int(first_pfid_raw) if first_pfid_raw is not None else -1
-            if first_pfid != prev_final:
-                print(f"     ⚠️  跨小时 gap! 期望 pfid={prev_final}, 实际={first_pfid} → 重新 bootstrap")
-                prev_final = bootstrap_from_first_update(ob_grouped, book, aggregator)
-                u_idx = 1
-            else:
-                print(f"     update 链连续，继续")
-                u_idx = 0  # 首条也需要 apply（它的 pfid 匹配）
-
-        # 推进 close_times 并生成特征
-        while bar_ptr < n_klines and update_times[-1] >= close_times[bar_ptr]:
-            target = close_times[bar_ptr]
-            # apply 所有 update_etimes < target
-            while u_idx < n_updates and update_times[u_idx] < target:
-                row = ob_grouped.row(u_idx, named=True)
-                pfid_raw = row["prev_final_update_id"]
-                final = int(row["final_update_id"])
-                # prev_final_update_id 可能为 null → 当 gap 处理
-                pfid = int(pfid_raw) if pfid_raw is not None else -1
-
-                if pfid != prev_final:
-                    # gap → 用当前 update bootstrap
-                    book.bids.clear(); book.asks.clear()
-                    aggregator = EventAggregator(WINDOWS)
-                    for side, p, q in zip(row["sides"], row["prices"], row["quantities"]):
-                        if q > 0:
-                            (book.bids if side == "bid" else book.asks)[p] = q
-                            if side == "bid": aggregator.bid_last_qty[p] = q
-                            else: aggregator.ask_last_qty[p] = q
-                    book._bid_sorted = sorted(book.bids.keys())
-                    book._ask_sorted = sorted(book.asks.keys())
-                    book.update_mid()
-                    book._maintain_window()
-                prev_final = final
-
-                et = int(row["event_time"])
-                bid_changes, ask_changes = [], []
-                for side, p, q in zip(row["sides"], row["prices"], row["quantities"]):
-                    book.apply(p, q, side)
-                    if side == "bid": bid_changes.append((p, q))
-                    else: ask_changes.append((p, q))
-                aggregator.on_depth_update(et, bid_changes, ask_changes)
-                u_idx += 1
-
-            if book.mid > 0:
-                snap = book.snapshot()
-                trade_stats = build_trade_window_stats(trades, target)
-                event_feat = aggregator.snapshot(target, trade_stats)
-                kline_row = klines.row(bar_ptr, named=True)
-
-                row_out = {"close_ts_ms": target}
-                row_out.update({f"book_{k}": v for k, v in snap.items()})
-                row_out.update(event_feat)
-                row_out.update({
-                    "kline_open": kline_row.get("open"),
-                    "kline_high": kline_row.get("high"),
-                    "kline_low": kline_row.get("low"),
-                    "kline_close": kline_row.get("close"),
-                    "kline_volume": kline_row.get("volume"),
-                    "kline_quote_volume": kline_row.get("quote_volume"),
-                    "kline_return": kline_row.get("kline_return"),
-                    "kline_range": kline_row.get("kline_range"),
-                    "kline_body": kline_row.get("kline_body"),
-                    "kline_upper_shadow": kline_row.get("kline_upper_shadow"),
-                    "kline_lower_shadow": kline_row.get("kline_lower_shadow"),
-                    "kline_vwap": kline_row.get("vwap"),
-                    "return_vs_prev": kline_row.get("return_vs_prev"),
-                    "volume_change": kline_row.get("volume_change"),
-                })
-                feat_rows.append(row_out)
-
-            bar_ptr += 1
-            if bar_ptr % 100 == 0:
-                elapsed = time.time() - t_replay
-                print(f"     ★ bar {bar_ptr}/{n_klines}  "
-                      f"[{bar_ptr/elapsed:.0f} bar/s]  "
-                      f"mid={book.mid:.2f}")
-
-        print(f"     小时耗时: {time.time() - t_hour:.1f}s  "
-              f"已处理 bar {bar_ptr}/{n_klines}")
-
-        # 释放单小时内存
-        del ob, ob_grouped, update_times
-        gc.collect()
-
-    # 处理未覆盖的 close_times（book 不推进，但特征里 book 保持最后状态）
     while bar_ptr < n_klines:
         target = close_times[bar_ptr]
-        if book.mid > 0:
-            snap = book.snapshot()
-            trade_stats = build_trade_window_stats(trades, target)
-            event_feat = aggregator.snapshot(target, trade_stats)
-            kline_row = klines.row(bar_ptr, named=True)
-            row_out = {"close_ts_ms": target}
-            row_out.update({f"book_{k}": v for k, v in snap.items()})
-            row_out.update(event_feat)
-            row_out.update({
-                "kline_open": kline_row.get("open"),
-                "kline_high": kline_row.get("high"),
-                "kline_low": kline_row.get("low"),
-                "kline_close": kline_row.get("close"),
-                "kline_volume": kline_row.get("volume"),
-                "kline_quote_volume": kline_row.get("quote_volume"),
-                "kline_return": kline_row.get("kline_return"),
-                "kline_range": kline_row.get("kline_range"),
-                "kline_body": kline_row.get("kline_body"),
-                "kline_upper_shadow": kline_row.get("kline_upper_shadow"),
-                "kline_lower_shadow": kline_row.get("kline_lower_shadow"),
-                "kline_vwap": kline_row.get("vwap"),
-                "return_vs_prev": kline_row.get("return_vs_prev"),
-                "volume_change": kline_row.get("volume_change"),
-            })
-            feat_rows.append(row_out)
+
+        # 加载小时文件（首次 或 上一个文件已经消费完）
+        if file_idx < len(ob_files) and u_idx == 0 and prev_final_id is None and total_updates == 0:
+            # 首次加载 — 需要 bootstrap
+            ob_grouped, fe, le = _prepare_hourly_orderbook(ob_files[file_idx])
+            print(f"   [{file_idx+1}/{len(ob_files)}] bootstrap 从 "
+                  f"{os.path.basename(ob_files[file_idx])} ...")
+            prev_final_id = bootstrap_from_first_update(ob_grouped, book, aggregator)
+            u_idx = 1  # 跳过 bootstrap 那条（已经 snapshot 进 book 了）
+            total_updates = 1
+
+        # 消费所有 event_time < target 的 update（可能跨多个小时文件）
+        while True:
+            # 如果当前文件已消费完，加载下一个
+            while file_idx < len(ob_files) and u_idx >= ob_grouped.height:
+                file_idx += 1
+                if file_idx >= len(ob_files):
+                    break
+                ob_grouped, fe, le = _prepare_hourly_orderbook(ob_files[file_idx])
+                print(f"   [{file_idx+1}/{len(ob_files)}] 加载下一小时 "
+                      f"{os.path.basename(ob_files[file_idx])}  "
+                      f"[{ms_to_str(fe)} ~ {ms_to_str(le)}]")
+                u_idx = 0
+                gc.collect()
+
+            if file_idx >= len(ob_files):
+                break  # 所有文件都消费完了
+
+            # 当前文件中还有 update 没消费
+            cur_et = int(ob_grouped["event_time"][u_idx])
+            if cur_et >= target:
+                break  # 这条 update 属于后面的 K 线，停
+
+            row = ob_grouped.row(u_idx, named=True)
+            try:
+                prev_final_id = _apply_update(book, aggregator, row, prev_final_id)
+            except Exception as e:
+                print(f"   ⚠️ apply 异常 at u_idx={u_idx}, file={file_idx}: {e}")
+                gap_count += 1
+            total_updates += 1
+            u_idx += 1
+
+        # 所有 event_time < target 的 update 都 apply 完了 → snapshot
+        if book.mid <= 0:
+            print(f"   ⚠️ book.mid=0 at bar {bar_ptr} (target={ms_to_str(target)}), 跳过")
+            bar_ptr += 1
+            continue
+
+        snap = book.snapshot()
+        trade_stats = build_trade_window_stats(trades, target)
+        event_feat = aggregator.snapshot(target, trade_stats)
+
+        # 找 K 线数据（用 close_ts_ms 精确匹配）
+        kline_match = klines.filter(pl.col("close_ts_ms") == target)
+        if kline_match.height == 0:
+            print(f"   ⚠️ 找不到 close_ts_ms={target} 的 K 线，跳过 bar {bar_ptr}")
+            bar_ptr += 1
+            continue
+        kline_row = kline_match.row(0, named=True)
+
+        row_out = {"close_ts_ms": target}
+        row_out.update({f"book_{k}": v for k, v in snap.items()})
+        row_out.update(event_feat)
+        row_out.update({
+            "kline_open": kline_row.get("open"),
+            "kline_high": kline_row.get("high"),
+            "kline_low": kline_row.get("low"),
+            "kline_close": kline_row.get("close"),
+            "kline_volume": kline_row.get("volume"),
+            "kline_quote_volume": kline_row.get("quote_volume"),
+            "kline_return": kline_row.get("kline_return"),
+            "kline_range": kline_row.get("kline_range"),
+            "kline_body": kline_row.get("kline_body"),
+            "kline_upper_shadow": kline_row.get("kline_upper_shadow"),
+            "kline_lower_shadow": kline_row.get("kline_lower_shadow"),
+            "kline_vwap": kline_row.get("vwap"),
+            "return_vs_prev": kline_row.get("return_vs_prev"),
+            "volume_change": kline_row.get("volume_change"),
+        })
+        feat_rows.append(row_out)
         bar_ptr += 1
 
-    # ---- 4. 过滤 dead rows（book 覆盖区域外 book_mid 不变的行） ----
-    print(f"\n🏷️  生成标签 ...")
+        if bar_ptr % 100 == 0:
+            elapsed = time.time() - t_replay
+            print(f"     ★ bar {bar_ptr}/{n_klines}  "
+                  f"[{bar_ptr/elapsed:.0f} bar/s]  "
+                  f"mid={book.mid:.2f}")
+
+    # 释放
+    if 'ob_grouped' in dir():
+        del ob_grouped
+    gc.collect()
+
+    print(f"\n   ✓ replay 完成: {bar_ptr} bars, {total_updates:,} updates applied, "
+          f"{gap_count} gaps")
+    print(f"   耗时: {time.time() - t_replay:.1f}s")
+
+    # ---- 5. 组装 DataFrame + 生成标签 + 保存 ----
+    print(f"\n🏷️  组装 DataFrame + 生成标签 ...")
     feat_df = pl.DataFrame(feat_rows).sort("close_ts_ms")
+    print(f"   原始特征行: {feat_df.height}")
 
-    # 识别 book 真正推进过的行（book_mid 与前一行不同）
-    feat_df = feat_df.with_columns([
-        pl.col("book_mid").shift(1).alias("prev_book_mid"),
-    ])
-    feat_df = feat_df.with_columns([
-        (pl.col("book_mid") != pl.col("prev_book_mid")).alias("book_changed"),
-    ])
-    n_live = feat_df.filter(pl.col("book_changed")).height
-    n_dead = feat_df.height - n_live
-    print(f"   book 覆盖区域内（book_changed=True）: {n_live} 行")
-    print(f"   book 覆盖区域外（book 停滞）: {n_dead} 行 → 过滤掉")
-    feat_df = feat_df.filter(pl.col("book_changed"))
-
-    # 标签
+    # 标签（shift -1 / -2）
     feat_df = feat_df.with_columns([
         pl.col("kline_close").shift(-1).alias("next_close"),
         pl.col("kline_close").shift(-2).alias("next2_close"),
@@ -598,24 +639,32 @@ def run_for_exchange(exchange: str):
     feat_df = feat_df.with_columns([
         (pl.col("label_return_1m") > 0).cast(pl.Int8).alias("label_dir_1m"),
     ])
+    # 去掉尾部 label 为 null 的行（因为 shift(-1/-2) 越界）
+    before = feat_df.height
     feat_df = feat_df.filter(pl.col("label_return_1m").is_not_null())
+    n_dropped = before - feat_df.height
 
     # 清理中间列
-    feat_df = feat_df.drop(["prev_book_mid", "book_changed", "next_close", "next2_close"])
+    feat_df = feat_df.drop(["next_close", "next2_close"])
 
-    # ---- 5. 保存 ----
+    # ---- 6. 保存 ----
     out_path = f"{OUT_DIR}/features_{exchange}_{SYMBOL}_{DATE}.parquet"
     feat_df.write_parquet(out_path, compression="zstd")
     elapsed = time.time() - t0
     print(f"✅ [{exchange}] 完成！")
-    print(f"   输出: {out_path}  ({feat_df.height} 行 × {feat_df.width} 列)")
-    print(f"   耗时: {elapsed:.1f}s  (总计 {total_updates:,} 条 update)")
-    print(f"   标签分布:")
-    print(feat_df["label_dir_1m"].value_counts().sort("label_dir_1m"))
-    print(f"   label_return_1m: mean={feat_df['label_return_1m'].mean():.6f}, "
-          f"std={feat_df['label_return_1m'].std():.6f}")
-    print(f"   mid 范围: {feat_df['book_mid'].min():.2f} ~ {feat_df['book_mid'].max():.2f} "
-          f"({feat_df['book_mid'].n_unique()} 个不同值)")
+    print(f"   输出: {out_path}")
+    print(f"   最终: {feat_df.height} 行 × {feat_df.width} 列  "
+          f"(尾部 shift 丢 {n_dropped} 行)")
+    print(f"   耗时: {elapsed:.1f}s  (总计 {total_updates:,} 条 update applied)")
+    print(f"   close_ts_ms 范围: [{feat_df['close_ts_ms'].min()} "
+          f"~ {feat_df['close_ts_ms'].max()}]")
+    if feat_df.height > 0:
+        print(f"   标签分布:")
+        print(feat_df["label_dir_1m"].value_counts().sort("label_dir_1m"))
+        print(f"   label_return_1m: mean={feat_df['label_return_1m'].mean():.6f}, "
+              f"std={feat_df['label_return_1m'].std():.6f}")
+        print(f"   mid 范围: {feat_df['book_mid'].min():.2f} ~ {feat_df['book_mid'].max():.2f} "
+              f"({feat_df['book_mid'].n_unique()} 个不同值)")
     return feat_df
 
 
